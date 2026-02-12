@@ -1,0 +1,10 @@
+streamlit
+openai
+Pillow
+pypdf
+SpeechRecognition
+gTTS
+pydub
+fpdf2
+opencv-python-headless
+streamlit-mic-recorder
