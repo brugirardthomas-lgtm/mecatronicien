@@ -184,7 +184,7 @@ def main():
     st.subheader("📝 Journal du Diagnostic")
     
     # Container pour l'historique scrollable
-    chat_container = st.container(height=350)
+    chat_container = st.container(height=600)
     with chat_container:
         for msg in st.session_state.messages:
             if msg["role"] != "system":
