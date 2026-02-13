@@ -56,12 +56,12 @@ st.markdown("""
 
     /* 4. Glass Expander (Vehicle Config) */
     .streamlit-expanderHeader {
-        background: rgba(255, 255, 255, 0.05) !important;
-        backdrop-filter: blur(10px);
+        background: #1e2329 !important; /* Solid dark color for reliability */
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 12px !important;
         color: white !important;
         font-weight: 600;
+        z-index: 1002; /* Ensure it stays on top */
     }
     
     /* 5. Glass Chat Bubbles (iMessage Style) */
@@ -76,12 +76,14 @@ st.markdown("""
         color: #E0E0E0;
     }
 
-    /* 6. Inputs & Selects (Glass Style) */
+    /* 6. Inputs & Selects (Reliable Style) */
+    /* Removed backdrop-filter to prevent touch/click issues */
     .stTextInput > div > div, .stSelectbox > div > div {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background-color: #262730 !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
         border-radius: 10px !important;
         color: white !important;
+        z-index: 1003;
     }
 
     /* 7. Floating Chat Input (Fixed Bottom) */
@@ -97,8 +99,8 @@ st.markdown("""
         border-top: 1px solid rgba(255,255,255,0.1);
     }
     
-    /* 8. FLOAT TOOLS FIX: Target the last horizontal block (Action Buttons) */
-    [data-testid="stHorizontalBlock"]:last-of-type {
+    /* 8. FLOAT TOOLS FIX: Target ONLY the bottom toolbar using :has() */
+    [data-testid="stHorizontalBlock"]:has(#floating-toolbar) {
         position: fixed;
         bottom: 80px; /* Above chat input */
         left: 0;
@@ -108,10 +110,11 @@ st.markdown("""
         padding-left: 1rem;
         pointer-events: none; /* Let clicks pass through empty space */
         width: 100% !important;
+        height: auto;
     }
     
-    /* Re-enable pointer events for the buttons inside */
-    [data-testid="stHorizontalBlock"]:last-of-type button {
+    /* Re-enable pointer events for the buttons inside this specific block */
+    [data-testid="stHorizontalBlock"]:has(#floating-toolbar) button {
         pointer-events: auto;
         box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
         background: rgba(30, 30, 40, 0.9) !important;
@@ -211,7 +214,9 @@ if st.session_state.show_pdf:
 # but for simplicity and stability, we put them right above the chat input in a flex row.
 col_actions = st.columns([1, 1, 6])
 with col_actions[0]:
-    if st.button("�"):
+    # Inject marker for CSS targeting
+    st.markdown('<div id="floating-toolbar"></div>', unsafe_allow_html=True)
+    if st.button("📷"):
         st.session_state.show_cam = not st.session_state.show_cam
         st.session_state.show_pdf = False
         st.rerun()
