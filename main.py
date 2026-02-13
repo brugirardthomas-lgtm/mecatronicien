@@ -17,38 +17,89 @@ st.set_page_config(page_title="MecaDiag Expert", page_icon="🔧", layout="cente
 # Custom CSS for Mobile/Dark Mode & WhatsApp style
 st.markdown("""
 <style>
-    /* Global Tweaks */
+    /* --- GLASSMORPHISM THEME --- */
+    
+    /* 1. Global Background: Deep Gradient */
     .stApp {
-        background-color: #0E1117; /* Dark background */
+        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        background-attachment: fixed;
+        color: white;
     }
     
-    /* Expander Styling */
+    /* 2. Main Container Spacing */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 7rem; /* Space for floating chat input */
+    }
+
+    /* 3. Glass Expander */
     .streamlit-expanderHeader {
-        background-color: #262730;
-        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 15px !important;
+        color: white !important;
+        font-weight: 600;
     }
     
-    /* Chat Input Styling */
+    /* 4. Glass Inputs (Text, Select) */
+    .stTextInput > div > div, .stSelectbox > div > div {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
+        color: white !important;
+    }
+    
+    /* 5. Glass Buttons (Tools) */
+    div.stButton > button {
+        background: rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 20px !important;
+        color: white !important;
+        font-weight: 500;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    div.stButton > button:hover {
+        background: rgba(255, 255, 255, 0.25) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(rgba(0,0,0,0.2));
+        border-color: rgba(255, 255, 255, 0.5) !important;
+    }
+    
+    /* 6. Floating Glass Chat Input */
     .stChatInput {
         position: fixed;
-        bottom: 0;
-        padding-bottom: 20px;
-        z-index: 100;
-        background-color: #0E1117;
+        bottom: 15px;
+        left: 5%;
+        right: 5%;
+        width: 90%;
+        margin: 0 auto;
+        background: rgba(15, 12, 41, 0.8) !important; /* Semi-transparent dark */
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 25px;
+        padding: 5px 10px;
+        z-index: 999;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     }
     
-    /* Make buttons full width in columns if needed */
-    div.stButton > button {
-        width: 100%;
-        border-radius: 20px;
+    /* 7. Chat Messages - Subtle Glass */
+    .stChatMessage {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        margin-bottom: 10px;
     }
-    
-    /* Tool Icons Row */
-    .tool-row {
-        display: flex;
-        justify-content: space-around;
-        padding: 5px;
-        margin-bottom: 5px;
+
+    /* 8. MOBILE LAYOUT FIX (Preserved) */
+    [data-testid="column"] {
+        width: calc(33.33% - 1rem) !important;
+        flex: 1 1 calc(33.33% - 1rem) !important;
+        min-width: 50px !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -185,7 +236,7 @@ def main():
         st.session_state.last_tts_audio = None
 
     # --- TOP: Vehicle Information (Expander) ---
-    with st.expander("🚗 Infos Véhicule", expanded=(not st.session_state.diagnostic_started)):
+    with st.expander("🚗 Infos Véhicule", expanded=False):
         col1, col2 = st.columns(2)
         with col1:
             voiture_modele = st.text_input("Modèle", placeholder="Ex: Clio 4", key="v_model")
@@ -225,54 +276,53 @@ def main():
     if "show_audio" not in st.session_state:
         st.session_state.show_audio = False
 
-    # --- Tool Drawers (Rendered if toggled) ---
+    # --- Tool Drawer Logic (Rendered if toggled) ---
+    # We render this container ABOVE the columns
     
-    # We render these ABOVE the chat input but BELOW the history
-    # Using a container to group them
-    tool_container = st.container()
+    if st.session_state.show_cam:
+        with st.container():
+            cam_input = st.camera_input("Photo", label_visibility="collapsed", key="cam_val")
+            if st.button("❌ Fermer Caméra", use_container_width=True):
+                st.session_state.show_cam = False
+                st.rerun()
+
+    if st.session_state.show_pdf:
+        with st.container():
+            pdf_input = st.file_uploader("PDF", type=["pdf"], key="pdf_val")
+            if st.button("❌ Fermer Import", use_container_width=True):
+                st.session_state.show_pdf = False
+                st.rerun()
+
+    if st.session_state.show_audio:
+        with st.container():
+            audio_val = st.audio_input("Audio", key="audio_val")
+            if st.button("❌ Fermer Micro", use_container_width=True):
+                st.session_state.show_audio = False
+                st.rerun()
+
+    # --- Tool Icons Row (Horizontal Bar) ---
+    # Dense row right above chat input
     
-    with tool_container:
-        if st.session_state.show_cam:
-            with st.expander("📷 Appareil Photo", expanded=True):
-                cam_input = st.camera_input("Photo", label_visibility="collapsed", key="cam_val")
-                if st.button("Fermer Caméra"):
-                    st.session_state.show_cam = False
-                    st.rerun()
-
-        if st.session_state.show_pdf:
-            with st.expander("📄 Document PDF", expanded=True):
-                pdf_input = st.file_uploader("PDF", type=["pdf"], key="pdf_val")
-                if st.button("Fermer Import"):
-                    st.session_state.show_pdf = False
-                    st.rerun()
-
-        if st.session_state.show_audio:
-            with st.expander("🎤 Enregistreur", expanded=True):
-                audio_val = st.audio_input("Audio", key="audio_val")
-                if st.button("Fermer Micro"):
-                    st.session_state.show_audio = False
-                    st.rerun()
-
-    # --- Tool Icons Row (Toggles) ---
-    # Placed right above the chat input
-    c1, c2, c3 = st.columns([1, 1, 1])
+    col_tools = st.columns(3)
     
-    with c1:
-        if st.button("📷 Photo", use_container_width=True):
+    with col_tools[0]:
+        # Toggle button style
+        icon = "📸" if not st.session_state.show_cam else "📂"
+        if st.button(f"{icon} Photo", use_container_width=True):
             st.session_state.show_cam = not st.session_state.show_cam
-            st.session_state.show_pdf = False # Exclusive open
+            st.session_state.show_pdf = False
             st.session_state.show_audio = False
             st.rerun()
     
-    with c2:
+    with col_tools[1]:
         if st.button("📄 PDF", use_container_width=True):
             st.session_state.show_pdf = not st.session_state.show_pdf
             st.session_state.show_cam = False
             st.session_state.show_audio = False
             st.rerun()
             
-    with c3:
-        if st.button("🎤 Audio", use_container_width=True):
+    with col_tools[2]:
+        if st.button("🎤 Vocal", use_container_width=True):
             st.session_state.show_audio = not st.session_state.show_audio
             st.session_state.show_cam = False
             st.session_state.show_pdf = False
