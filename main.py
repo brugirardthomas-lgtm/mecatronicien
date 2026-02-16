@@ -12,7 +12,144 @@ import tempfile
 import os
 
 # Configuration de la page
-st.set_page_config(page_title="Cadre Diagnosticien", page_icon="🔧", layout="wide")
+st.set_page_config(page_title="Expert KTS", page_icon="🔧", layout="centered", initial_sidebar_state="collapsed")
+
+# --- CSS GLOBAL STYLE (STITCH DESIGN) ---
+st.markdown("""
+<style>
+    /* Import Inter Font */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Variables */
+    :root {
+        --primary: #3B82F6;       /* Electric Blue */
+        --primary-hover: #2563EB;
+        --secondary: #007AFF;     /* iOS Blue */
+        --background-dark: #121212;
+        --surface-card: #1E1E1E;
+        --input-bg: #2C2C2C;
+        --input-border: #404040;
+        --text-header: #FFFFFF;
+        --text-body: #E0E0E0;
+        --text-muted: #A0A0A0;
+        --lime-green: #D9FD12;
+    }
+
+    /* GLOBAL RESET & FONT */
+    .stApp {
+        background-color: var(--background-dark);
+        font-family: 'Inter', sans-serif;
+        color: var(--text-body);
+    }
+    
+    /* HIDE DEFAULT HEADER/FOOTER */
+    header[data-testid="stHeader"] {display: none;}
+    footer {display: none;}
+    #MainMenu {display: none;}
+    
+    /* CUSTOM HEADERS */
+    h1, h2, h3 {
+        color: var(--text-header) !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    
+    /* INPUT FIELDS STYLING */
+    .stTextInput input, .stNumberInput input, .stSelectbox select, .stTextArea textarea {
+        background-color: var(--input-bg) !important;
+        color: var(--text-header) !important;
+        border: 1px solid var(--input-border) !important;
+        border-radius: 12px !important;
+        padding: 10px 15px !important;
+    }
+    
+    .stTextInput input:focus, .stNumberInput input:focus, .stTextArea textarea:focus {
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 1px var(--primary) !important;
+    }
+    
+    /* LABELS */
+    .stTextInput label, .stNumberInput label, .stSelectbox label, .stTextArea label {
+        color: var(--text-muted) !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+    }
+    
+    /* CARDS (CONTAINERS) */
+    div[data-testid="stVerticalBlock"] > div[style*="background-color"] {
+        background-color: var(--surface-card) !important;
+        border: 1px solid var(--input-border);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    /* BUTTONS */
+    div.stButton > button {
+        width: 100%;
+        border-radius: 16px !important;
+        border: none !important;
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    
+    /* Primary Button (Launch) */
+    div.stButton > button[kind="primary"] {
+        background-color: var(--primary) !important;
+        color: white !important;
+        box-shadow: 0 0 20px -5px rgba(59, 130, 246, 0.5) !important;
+    }
+    
+    div.stButton > button[kind="primary"]:hover {
+        background-color: var(--primary-hover) !important;
+        transform: scale(1.02);
+    }
+    
+    /* Secondary/Ghost Button */
+    div.stButton > button[kind="secondary"] {
+        background-color: var(--surface-card) !important;
+        color: var(--text-body) !important;
+        border: 1px solid var(--input-border) !important;
+    }
+
+    /* CHAT BUBBLES */
+    .stChatMessage {
+        background-color: transparent !important;
+        border: none !important;
+    }
+    
+    /* User Message */
+    div[data-testid="stChatMessage"]:nth-child(even) {
+        flex-direction: row-reverse;
+    }
+    
+    div[data-testid="stChatMessage"]:nth-child(even) div[data-testid="stMarkdownContainer"] {
+        background-color: var(--secondary) !important;
+        color: white !important;
+        border-radius: 18px 18px 4px 18px !important;
+        padding: 12px 16px !important;
+    }
+    
+    /* AI Message */
+    div[data-testid="stChatMessage"]:nth-child(odd) div[data-testid="stMarkdownContainer"] {
+        background-color: var(--surface-card) !important;
+        color: var(--text-body) !important;
+        border: 1px solid var(--input-border) !important;
+        border-radius: 18px 18px 18px 4px !important;
+        padding: 12px 16px !important;
+    }
+    
+    /* Chat Avatars */
+    .stChatMessage .stImage {
+        border-radius: 50%;
+    }
+    
+</style>
+""", unsafe_allow_html=True)
+
 
 # Récupération de la clé API et Configuration Client
 def get_client():
@@ -77,9 +214,7 @@ def safe_truncate(content: str | None, length: int) -> str:
     """Tronque une chaîne de caractères de manière sûre."""
     if not content:
         return ""
-    # Cast explicite pour le linter
     s = str(content)
-    # Linter workaround: Slicing explicit
     if len(s) > length:
         return s[:length] # type: ignore
     return s
@@ -88,20 +223,17 @@ def transcribe_audio(audio_bytes):
     """Transcription audio via Google Speech Recognition."""
     r = sr.Recognizer()
     text = ""
-    # Création d'un fichier temporaire pour le traitement
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_audio:
         tmp_audio.write(audio_bytes)
         tmp_audio_path = tmp_audio.name
 
     try:
         with sr.AudioFile(tmp_audio_path) as source:
-            # Enregistrement et nettoyage du bruit ambiant
             r.adjust_for_ambient_noise(source)
             audio_data = r.record(source)
-            # Reconnaissance (langue française)
             text = r.recognize_google(audio_data, language="fr-FR")
     except sr.UnknownValueError:
-        pass # Audio non compris, on ignore silencieusement ou on log
+        pass
     except sr.RequestError as e:
         st.error(f"Erreur Service Vocal : {e}")
     except Exception as e:
@@ -123,7 +255,6 @@ def text_to_speech(text):
         return None
 
 def get_ai_response(client, messages):
-    # On utilise un modèle multimodal performant
     models = ["google/gemini-2.0-flash-001", "meta-llama/llama-3.3-70b-instruct:free"]
     
     for model in models:
@@ -145,8 +276,6 @@ def get_ai_response(client, messages):
 def main():
     client = get_client()
 
-    st.title("Diagnosticien Expert KTS (Multimodal & Vocal) 🔧")
-
     # Initialisation de l'historique
     if "messages" not in st.session_state:
         st.session_state.messages = [
@@ -155,141 +284,119 @@ def main():
     if "diagnostic_started" not in st.session_state:
         st.session_state.diagnostic_started = False
     
-    # State pour l'audio processed pour éviter les boucles
     if "last_audio_id" not in st.session_state:
         st.session_state.last_audio_id = None
     
-    # State pour TTS autoplay
     if "last_tts_audio" not in st.session_state:
         st.session_state.last_tts_audio = None
-
-    # --- Zone Info Véhicule (sidebar enroulable) ---
-    st.sidebar.markdown("### 🚗 Véhicule")
-    
-    with st.sidebar.container():
-        voiture_modele = st.text_input("Modèle", placeholder="Ex: Renault Clio 4", key="v_model")
-        annee = st.number_input("Année", 1980, 2025, 2015, key="v_year")
-        kilometrage = st.number_input("Km", 0, step=1000, value=100000, key="v_km")
-        code_defaut = st.text_input("Code Défaut / Symptôme", placeholder="Ex: P0087", key="v_fault")
-        carburant = st.selectbox("Carburant", ["Diesel", "Essence", "Hybride", "Électrique"], key="v_fuel")
-        code_moteur = st.text_input("Code Moteur", placeholder="Ex: K9K", key="v_engine")
-    
-    st.sidebar.info("Remplissez les infos véhicule ici.")
-
-    # --- Gestion de l'audio TTS (Autoplay) ---
-    if st.session_state.last_tts_audio:
-        st.audio(st.session_state.last_tts_audio, format="audio/mp3", autoplay=True)
-
-    # --- Zone Journal du Diagnostic (Historique) ---
-    st.subheader("📝 Journal du Diagnostic")
-    
-    # Container pour l'historique scrollable
-    chat_container = st.container(height=350)
-    with chat_container:
-        for msg in st.session_state.messages:
-            if msg["role"] != "system":
-                with st.chat_message(msg["role"]):
-                    if isinstance(msg["content"], list):
-                        for content_part in msg["content"]:
-                            if content_part["type"] == "text":
-                                st.markdown(content_part["text"])
-                            elif content_part["type"] == "image_url":
-                                st.image(content_part["image_url"]["url"], width=200, caption="Image analysée")
-                    else:
-                        st.markdown(msg["content"])
-
-    st.markdown("---")
-
-    # --- Ergononomie Mobile : Espacement ---
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # --- Zone de Saisie & Outils (Commune) ---
-    st.subheader("🔧 Outils de Diagnostic")
-    
-    # Layout 3 colonnes pour les outils
-    col_vision, col_doc, col_vocal = st.columns(3)
-    
-    # Outil 1 : Vision (Caméra Directe)
-    with col_vision:
-        st.markdown("##### 📷 Photo")
-        # Remplacement par st.camera_input pour mobile
-        uploaded_image = st.camera_input("Prendre photo", label_visibility="collapsed")
-        if uploaded_image:
-            st.success("✅ Prête")
-        else:
-            st.info("Ouvrir Caméra")
-
-    # Outil 2 : Doc
-    with col_doc:
-        st.markdown("##### 📄 PDF")
-        uploaded_pdf = st.file_uploader("PDF", type=["pdf"], label_visibility="collapsed")
-        if uploaded_pdf:
-            st.success("✅ Prêt")
-        else:
-            st.info("Ajouter PDF")
-
-    # Outil 3 : Vocal
-    with col_vocal:
-        st.markdown("##### 🎤 Audio")
-        audio_input = st.audio_input("Vocal", label_visibility="collapsed")
         
-        # Logique de transcription immédiate
-        processed_audio_text = None
-        if audio_input is not None:
-            current_audio_bytes = audio_input.getvalue()
-            current_audio_id = hash(current_audio_bytes)
-            st.success("✅ Prêt")
+    # --- UI STATE HANDLING ---
     
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # --- Actions Contextuelles ---
-    
-    # Cas 1 : Le diagnostic n'a pas commencé
+    # ---------------------------------------------------------
+    # VIEW 1: SETUP (NOUVEAU DIAGNOSTIC)
+    # ---------------------------------------------------------
     if not st.session_state.diagnostic_started:
         
-        st.markdown("##### 📝 Observations & Lancement")
-        symptomes_client = st.text_area(
-            "Observations du client / Symptômes ressentis", 
-            placeholder="Ex: Perte de puissance, bruit suspect...",
-            height=100
-        )
+        # Header "Phone Style"
+        st.markdown("""
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="font-size: 12px; font-weight: 600; color: #A0A0A0;">09:41</div>
+            <div style="display: flex; gap: 8px;">
+                 <span style="font-size: 12px; color: #A0A0A0;">Signal</span>
+                 <span style="font-size: 12px; color: #A0A0A0;">Wifi</span>
+                 <span style="font-size: 12px; color: #A0A0A0;">Batt</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<h1 style='font-size: 28px; margin-bottom: 4px;'>Nouveau Diagnostic</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #A0A0A0; font-size: 14px; margin-bottom: 24px;'>Remplissez les données du véhicule pour lancer l'analyse.</p>", unsafe_allow_html=True)
+        
+        # --- CARTE 1: VÉHICULE ---
+        with st.container(border=True):
+            st.markdown("""
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <span style="font-size: 20px; color: #3B82F6;">🚗</span>
+                <h3 style="margin: 0; font-size: 16px;">Données Véhicule</h3>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.text_input("MODÈLE", value="Renault Clio 4", key="v_model")
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                st.number_input("ANNÉE", 1980, 2026, 2015, key="v_year")
+            with c2:
+                st.number_input("KM", 0, step=1000, value=100000, key="v_km")
+                
+            c3, c4 = st.columns(2)
+            with c3:
+                st.selectbox("CARBURANT", ["Diesel", "Essence", "Hybride", "Électrique"], key="v_fuel")
+            with c4:
+                st.text_input("CODE MOTEUR", value="K9K", key="v_engine")
 
-        # Bouton Lancer LARGE (Mobile)
-        start_button = st.button("🚀 LANCER LE DIAGNOSTIC", type="primary", use_container_width=True)
+        # --- CARTE 2: PANNE ---
+        st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+        
+        with st.container(border=True):
+            st.markdown("""
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <span style="font-size: 20px; color: #EF4444;">⚠️</span>
+                <h3 style="margin: 0; font-size: 16px;">Données Panne</h3>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.text_input("CODE DÉFAUT PRINCIPAL", value="P0087", key="v_fault")
+            st.text_area("SYMPTÔMES / OBSERVATIONS", height=100, placeholder="Décrivez le problème...", key="v_obs")
+
+        st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
+
+        # --- AUDIO ENTRÉE ---
+        st.caption("Optionnel : Contexte vocal")
+        audio_input = st.audio_input("Vocal", label_visibility="collapsed")
+
+        # --- DOCUMENT ENTRÉE ---
+        st.caption("Optionnel : PDF Technique")
+        uploaded_pdf = st.file_uploader("PDF", type=["pdf"], label_visibility="collapsed")
+        
+        # --- PHOTOS ---
+        st.caption("Optionnel : Photo")
+        uploaded_image = st.camera_input("Prendre photo", label_visibility="collapsed")
+
+        st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
+
+        # --- ACTION BUTTON ---
+        start_button = st.button("🚀 LANCER L'ANALYSE EXPERTE", type="primary", use_container_width=True)
 
         if start_button:
-            if not voiture_modele or not code_defaut:
-                st.error("⚠️ Merci de remplir le Modèle et le Code Défaut dans la barre latérale.")
+            if not st.session_state.v_model or not st.session_state.v_fault:
+                st.error("⚠️ Merci de remplir le Modèle et le Code Défaut.")
             else:
-                # 1. Transcription Audio si présent
+                # PROCESSING 
                 audio_text = ""
                 if audio_input:
                      with st.spinner("Transcription audio..."):
                         audio_text = transcribe_audio(audio_input.getvalue())
                 
-                # 2. Construction du Contexte
-                contexte_km = "Attention: Fort kilométrage." if kilometrage > 200000 else ""
+                contexte_km = "Attention: Fort kilométrage." if st.session_state.v_km > 200000 else ""
                 
                 pdf_text: str = process_pdf(uploaded_pdf)
                 contexte_doc = ""
-                if pdf_text and len(pdf_text) > 0:
+                if pdf_text:
                     truncated_text = safe_truncate(pdf_text, 30000)
                     contexte_doc = f"\n\n[CONTEXTE DOCUMENTAIRE PDF] :\n{truncated_text}..."
                 
-                # Fusion des observations
-                obs_finales = symptomes_client
+                obs_finales = st.session_state.v_obs
                 if audio_text:
                     obs_finales += f" [VOCAL TRANSCRIT: {audio_text}]"
 
                 initial_text = f"""
                 NOUVEAU CAS :
-                Véhicule : {voiture_modele} ({annee}) - {carburant}
-                Moteur : {code_moteur}
-                Kilométrage : {kilometrage} km
-                Problème signalé (Code/Défaut) : {code_defaut}
-                Symptômes ressentis / Observations : {obs_finales}
+                Véhicule : {st.session_state.v_model} ({st.session_state.v_year}) - {st.session_state.v_fuel}
+                Moteur : {st.session_state.v_engine}
+                Kilométrage : {st.session_state.v_km} km
+                Problème signalé : {st.session_state.v_fault}
+                Symptômes : {obs_finales}
                 {contexte_km}
                 {contexte_doc}
                 
@@ -309,7 +416,7 @@ def main():
                 st.session_state.messages.append({"role": "user", "content": user_message_content}) # type: ignore
                 st.session_state.diagnostic_started = True
                 
-                with st.spinner("🧠 Analyse Expert en cours..."):
+                with st.spinner("Analyse Expert en cours..."):
                     response = get_ai_response(client, st.session_state.messages)
                     st.session_state.messages.append({"role": "assistant", "content": response})
                     
@@ -319,74 +426,109 @@ def main():
                         
                     st.rerun()
 
-    # Cas 2 : Diagnostic en cours
+    # ---------------------------------------------------------
+    # VIEW 2: ACTIVE DIAGNOSTIC (CHAT)
+    # ---------------------------------------------------------
     else:
-        st.markdown("##### 💬 Réponse au Test")
+        # HEADER DYNAMIC
+        header_title = f"{st.session_state.get('v_model', 'Véhicule')} - {st.session_state.get('v_fault', 'Panne')}"
+        st.markdown(f"""
+        <div style="position: sticky; top: 0; z-index: 99; background: #121212; padding: 10px 0; border-bottom: 1px solid #2C2C2E; display: flex; justify-content: space-between; align-items: center;">
+             <button style="background:none; border:none; color: white;">🔙</button>
+             <div style="text-align: center;">
+                 <h3 style="margin: 0; font-size: 16px; color: white;">{header_title}</h3>
+                 <div style="color: #22C55E; font-size: 12px; display: flex; align-items: center; gap: 4px; justify-content: center;">
+                    <span style="display:inline-block; width: 6px; height: 6px; border-radius: 50%; background: #22C55E;"></span> En ligne
+                 </div>
+             </div>
+             <button style="background:none; border:none; color: white;">⋮</button>
+        </div>
+        <div style="height: 20px;"></div>
+        """, unsafe_allow_html=True)
         
-        observation = st.text_input("Résultat du test / Observation", key="user_input_running")
-        
-        st.markdown("<br>", unsafe_allow_html=True)
+        # TTS AUTOPLAY
+        if st.session_state.last_tts_audio:
+            st.audio(st.session_state.last_tts_audio, format="audio/mp3", autoplay=True)
 
-        col_send, col_new = st.columns([3, 1])
-        with col_send:
-            # Bouton Envoyer LARGE (Mobile)
-            send_clicked = st.button("📨 ENVOYER LA RÉPONSE", type="primary", use_container_width=True)
-        with col_new:
-            # Bouton Nouveau LARGE
-            new_diag = st.button("🔄 Nouveau", use_container_width=True)
+        # CHAT HISTORY
+        chat_container = st.container(height=500)
+        with chat_container:
+            for msg in st.session_state.messages:
+                if msg["role"] != "system":
+                    with st.chat_message(msg["role"], avatar="🔧" if msg["role"] == "user" else "🤖"):
+                        if isinstance(msg["content"], list):
+                            for content_part in msg["content"]:
+                                if content_part["type"] == "text":
+                                    st.markdown(content_part["text"])
+                                elif content_part["type"] == "image_url":
+                                    st.image(content_part["image_url"]["url"], width=200)
+                        else:
+                            st.markdown(msg["content"])
         
-        if new_diag:
+        st.markdown("<hr style='border-color: #2C2C2E; margin: 10px 0;'>", unsafe_allow_html=True)
+
+        # INPUT AREA (Sticky-like)
+        
+        # Tools Row
+        c_tools_1, c_tools_2, c_tools_3 = st.columns(3)
+        with c_tools_1:
+           cam_input = st.camera_input("📷", label_visibility="collapsed")
+        with c_tools_2:
+           doc_input = st.file_uploader("📄", type=["pdf"], label_visibility="collapsed")
+        with c_tools_3:
+           voc_input = st.audio_input("🎤", label_visibility="collapsed")
+
+        # Text Input
+        observation = st.chat_input("Posez votre question technique ou répondez au test...")
+
+        if observation or (voc_input and observation is None):  # Handle audio trigger if chat input empty
+            
+            # 1. Processing Inputs
+            input_text = observation if observation else ""
+            
+            audio_txt = ""
+            if voc_input:
+                with st.spinner("Transcription..."):
+                    audio_txt = transcribe_audio(voc_input.getvalue())
+            
+            if audio_txt:
+                input_text += f" [VOCAL TRANSCRIT: {audio_txt}]"
+            
+            # Send Condition
+            if input_text or cam_input or doc_input:
+                user_content: list[dict[str, Any]] = []
+                
+                text_payload = input_text if input_text else "Voici des éléments pour le diagnostic."
+                
+                # PDF Process
+                pdf_txt = process_pdf(doc_input)
+                if pdf_txt:
+                    text_payload += f"\n\n[DOC PDF]: {safe_truncate(pdf_txt, 10000)}..."
+                
+                user_content.append({"type": "text", "text": text_payload})
+                
+                # Image Process
+                img_url = process_image(cam_input)
+                if img_url:
+                    user_content.append({"type": "image_url", "image_url": {"url": img_url}})
+                
+                st.session_state.messages.append({"role": "user", "content": user_content}) # type: ignore
+                
+                with st.spinner("Analyse Expert..."):
+                    resp = get_ai_response(client, st.session_state.messages)
+                    st.session_state.messages.append({"role": "assistant", "content": resp})
+                    
+                    audio_out = text_to_speech(resp)
+                    if audio_out:
+                         st.session_state.last_tts_audio = audio_out
+                    
+                    st.rerun()
+
+        # START OVER BUTTON
+        if st.button("🔄 Nouveau Cas"):
             st.session_state.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
             st.session_state.diagnostic_started = False
-            st.session_state.last_audio_id = None
-            st.session_state.last_tts_audio = None
             st.rerun()
-
-        if send_clicked:
-            # 1. Transcription Audio si présent
-            audio_text = ""
-            if audio_input:
-                with st.spinner("Transcription audio..."):
-                    audio_text = transcribe_audio(audio_input.getvalue())
-
-            # Priorité : Audio > Texte saisi > Rien
-            input_text = observation
-            if audio_text:
-                input_text += f" [VOCAL TRANSCRIT: {audio_text}]"
-            
-            # On envoie seulement s'il y a du contenu
-            if input_text or uploaded_image or uploaded_pdf:
-                user_message_content: list[dict[str, Any]] = []
-                
-                text_content = input_text if input_text else "Voici un complément d'information."
-                
-                pdf_text: str = process_pdf(uploaded_pdf)
-                if pdf_text and len(pdf_text) > 0:
-                    truncated_text = safe_truncate(pdf_text, 20000)
-                    text_content += f"\n\n[NOUVELLE DOC PDF FOURNIE] :\n{truncated_text}..."
-                
-                user_message_content.append({"type": "text", "text": text_content})
-                
-                image_url = process_image(uploaded_image)
-                if image_url:
-                    user_message_content.append({
-                        "type": "image_url",
-                        "image_url": {"url": image_url}
-                    })
-                
-                st.session_state.messages.append({"role": "user", "content": user_message_content}) # type: ignore
-                
-                with st.spinner("🧠 Analyse des nouvelles données..."):
-                    response = get_ai_response(client, st.session_state.messages)
-                    st.session_state.messages.append({"role": "assistant", "content": response})
-                    
-                    audio_file = text_to_speech(response)
-                    if audio_file:
-                        st.session_state.last_tts_audio = audio_file
-                        
-                    st.rerun()
-            else:
-                st.warning("⚠️ Veuillez saisir une réponse, parler, ou ajouter une photo/doc.")
 
 if __name__ == "__main__":
     main()
