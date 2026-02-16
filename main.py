@@ -206,7 +206,9 @@ def process_pdf(uploaded_file) -> str:
 def safe_truncate(content: str | None, length: int) -> str:
     if not content: return ""
     s = str(content)
-    if len(s) > length: return s[:length]
+    # Explicit cast & ignore lint
+    l_int = int(length) 
+    if len(s) > l_int: return s[:l_int] # type: ignore
     return s
 
 def transcribe_audio(audio_bytes):
